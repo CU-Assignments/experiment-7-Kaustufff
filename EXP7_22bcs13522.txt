@@ -1,0 +1,128 @@
+EASY LEVEL:
+
+import java.sql.*;
+public class DataFetch {
+    public static void main(String[] args) throws SQLException {
+        Connection connObj = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "pass");
+        Statement stmtObj = connObj.createStatement();
+        ResultSet rsObj = stmtObj.executeQuery("SELECT * FROM Employee");
+        while (rsObj.next()) {
+            System.out.println(rsObj.getInt("EmpID") + " " + rsObj.getString("Name") + " " + rsObj.getDouble("Salary"));
+        }
+        rsObj.close();
+        stmtObj.close();
+        connObj.close();
+    }
+}
+
+
+MEDIUM LEVEL:
+
+import java.sql.*;
+import java.util.Scanner;
+public class ProductManager {
+    public static void main(String[] args) throws SQLException {
+        Connection connObj = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "pass");
+        Scanner scnrObj = new Scanner(System.in);
+        connObj.setAutoCommit(false);
+        try {
+            while (true) {
+                System.out.println("1.Add 2.View 3.Update 4.Delete 5.Exit");
+                int choice = scnrObj.nextInt();
+                switch (choice) {
+                    case 1:
+                        PreparedStatement pstmtAdd = connObj.prepareStatement("INSERT INTO Product VALUES(?,?,?,?)");
+                        pstmtAdd.setInt(1, scnrObj.nextInt());
+                        pstmtAdd.setString(2, scnrObj.next());
+                        pstmtAdd.setDouble(3, scnrObj.nextDouble());
+                        pstmtAdd.setInt(4, scnrObj.nextInt());
+                        pstmtAdd.executeUpdate();
+                        break;
+                    case 2:
+                        Statement stmtView = connObj.createStatement();
+                        ResultSet rsView = stmtView.executeQuery("SELECT * FROM Product");
+                        while (rsView.next()) System.out.println(rsView.getInt(1) + " " + rsView.getString(2));
+                        break;
+                    case 3:
+                        PreparedStatement pstmtUpd = connObj.prepareStatement("UPDATE Product SET Price=? WHERE ProductID=?");
+                        pstmtUpd.setDouble(1, scnrObj.nextDouble());
+                        pstmtUpd.setInt(2, scnrObj.nextInt());
+                        pstmtUpd.executeUpdate();
+                        break;
+                    case 4:
+                        PreparedStatement pstmtDel = connObj.prepareStatement("DELETE FROM Product WHERE ProductID=?");
+                        pstmtDel.setInt(1, scnrObj.nextInt());
+                        pstmtDel.executeUpdate();
+                        break;
+                    case 5:
+                        connObj.commit();
+                        connObj.close();
+                        return;
+                }
+            }
+        } catch (SQLException e) {
+            connObj.rollback();
+        }
+    }
+}
+
+
+
+HARD LEVEL:
+
+// Model
+class StudentModel {
+    int stdId;
+    String stdName;
+    String dept;
+    double marks;
+}
+
+// View
+class StudentView {
+    public void showMenu() {
+        System.out.println("1.Insert 2.Show 3.Modify 4.Remove");
+    }
+}
+
+// Controller
+class StudentController {
+    private Connection cntObj;
+    public StudentController() throws SQLException {
+        cntObj = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "pass");
+    }
+    
+    public void insertStd(StudentModel sm) throws SQLException {
+        PreparedStatement pstIns = cntObj.prepareStatement("INSERT INTO Student VALUES(?,?,?,?)");
+        pstIns.setInt(1, sm.stdId);
+        pstIns.setString(2, sm.stdName);
+        pstIns.setString(3, sm.dept);
+        pstIns.setDouble(4, sm.marks);
+        pstIns.executeUpdate();
+    }
+    
+    public ResultSet fetchStds() throws SQLException {
+        return cntObj.createStatement().executeQuery("SELECT * FROM Student");
+    }
+}
+
+// Main App
+public class MVCApp {
+    public static void main(String[] args) throws SQLException {
+        StudentView svObj = new StudentView();
+        StudentController scObj = new StudentController();
+        Scanner mscObj = new Scanner(System.in);
+        while (true) {
+            svObj.showMenu();
+            int opt = mscObj.nextInt();
+            StudentModel sm = new StudentModel();
+            if (opt == 1) {
+                sm.stdId = mscObj.nextInt();
+                sm.stdName = mscObj.next();
+                sm.dept = mscObj.next();
+                sm.marks = mscObj.nextDouble();
+                scObj.insertStd(sm);
+            }
+        }
+    }
+}
